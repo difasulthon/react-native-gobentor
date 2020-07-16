@@ -9,6 +9,7 @@ import IconEditProfile from './ic-edit-profile.svg';
 import IconHelp from './ic-help.svg';
 import IconSecure from './ic-privacy.svg';
 import IconBackLight from './ic-back-light.svg';
+import IconErase from './ic-erase.svg';
 
 export {
   IconHome,
@@ -22,4 +23,5 @@ export {
   IconSecure,
   IconEditProfile,
   IconBackLight,
+  IconErase,
 };
