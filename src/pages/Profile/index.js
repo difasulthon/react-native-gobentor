@@ -2,12 +2,24 @@ import React, {useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {Button, List, Gap, User} from '../../components';
 import {DummyUser} from '../../assets';
-import {colors} from '../../utils';
+import {colors, showError} from '../../utils';
+import {Fire} from '../../config';
 
 const Profile = ({navigation}) => {
   const [photo] = useState(DummyUser);
   const [fullName] = useState('User Satu');
   const [role] = useState('Driver');
+
+  const onLogout = () => {
+    Fire.auth()
+      .signOut()
+      .then(() => {
+        navigation.replace('Started');
+      })
+      .catch(err => {
+        showError(err.message);
+      });
+  };
 
   return (
     <View style={styles.page}>
@@ -40,7 +52,7 @@ const Profile = ({navigation}) => {
       </View>
       <View>
         <View style={styles.buttonWrapper}>
-          <Button type="secondary" title="Logout" />
+          <Button type="secondary" title="Logout" onPress={onLogout} />
         </View>
         <View style={styles.border} />
       </View>

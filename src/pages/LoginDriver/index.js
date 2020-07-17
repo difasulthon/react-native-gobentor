@@ -1,10 +1,62 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {StyleSheet, Text, View, ScrollView} from 'react-native';
 import {ILRickshawLogin} from '../../assets';
 import {Input, Button, Gap} from '../../components';
-import {colors, fonts} from '../../utils';
+import {colors, fonts, useForm, storeData, showError} from '../../utils';
+import {Fire} from '../../config';
 
 const LoginDriver = ({navigation}) => {
+  const [form, setForm] = useForm({
+    email: '',
+    password: '',
+  });
+  const [userId, setUserId] = useState();
+
+  useEffect(() => {
+    Fire.auth().onAuthStateChanged(user => {
+      if (user) {
+        navigation.replace('MainAppCustomer');
+      } else {
+        return;
+      }
+    });
+  }, [navigation]);
+
+  const onRegist = () => {
+    Fire.auth()
+      .createUserWithEmailAndPassword(form.email, form.password)
+      .then(success => {
+        setForm('reset');
+        setUserId(success.user.uid);
+        const data = {
+          email: form.email,
+          uid: userId,
+          role: 'driver',
+        };
+        Fire.database()
+          .ref('Users/Drivers/' + userId + '/')
+          .set(true);
+        storeData(data);
+        navigation.replace('MainAppDriver');
+      })
+      .catch(error => {
+        const errorMessage = error.message;
+        showError(errorMessage);
+      });
+  };
+
+  const onLogin = () => {
+    Fire.auth()
+      .signInWithEmailAndPassword(form.email, form.password)
+      .then(res => {
+        setForm('reset');
+        navigation.replace('MainAppDriver');
+      })
+      .catch(error => {
+        showError(error.message);
+      });
+  };
+
   return (
     <View style={styles.page}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -13,19 +65,21 @@ const LoginDriver = ({navigation}) => {
         <Gap height={40} />
         <Text style={styles.title}>Selamat datang, silahkan masuk</Text>
         <Gap height={40} />
-        <Input label={'Email'} />
+        <Input
+          label={'Email'}
+          value={form.email}
+          onChangeText={text => setForm('email', text)}
+        />
         <Gap height={16} />
-        <Input label={'Password'} />
+        <Input
+          label={'Password'}
+          value={form.password}
+          onChangeText={text => setForm('password', text)}
+        />
         <Gap height={40} />
-        <Button
-          title={'Masuk'}
-          onPress={() => navigation.navigate('MainAppDriver')}
-        />
+        <Button title={'Masuk'} onPress={onLogin} />
         <Gap height={16} />
-        <Button
-          title={'Daftar'}
-          onPress={() => navigation.navigate('MainAppDriver')}
-        />
+        <Button title={'Daftar'} onPress={onRegist} />
       </ScrollView>
     </View>
   );

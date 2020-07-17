@@ -109,7 +109,7 @@ const MapCustomer = ({navigation}) => {
         nearbyPlacesAPI="GooglePlacesSearch"
         onTouchCancel
         query={{
-          key: '',
+          key: 'AIzaSyBKhFllAeWOXdbL3eg6fv051R5eBoC7AWU',
           language: 'en',
           types: 'geocode',
         }}
