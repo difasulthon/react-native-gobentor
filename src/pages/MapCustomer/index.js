@@ -1,18 +1,16 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {
-  StyleSheet,
-  View,
-  Platform,
-  Alert,
-  TouchableOpacity,
-} from 'react-native';
-import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
+import {StyleSheet, View, Platform, TouchableOpacity, Text} from 'react-native';
+import MapView, {PROVIDER_GOOGLE, Marker, Callout} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
+import {GeoFire} from 'geofire';
 import {Button, User} from '../../components';
-import {colors} from '../../utils';
+import {colors, showError, getData} from '../../utils';
 import {DummyUser, IconErase} from '../../assets';
+import {Fire} from '../../config';
+
+let user_id;
 
 const MapCustomer = ({navigation}) => {
   const [region, setRegion] = useState();
@@ -26,8 +24,13 @@ const MapCustomer = ({navigation}) => {
   //   role: '081234567890',
   // });
   const [user] = useState(null);
+  const [textButton, setTextButton] = useState('Panggil Bentor');
+  const [requestValue, setRequestValue] = useState(false);
+  const [listDriver, setListDrive] = useState([]);
+  const [uid, setUid] = useState();
 
   useEffect(() => {
+    getUserData();
     requestLocationPermission();
   }, [requestLocationPermission]);
 
@@ -65,8 +68,8 @@ const MapCustomer = ({navigation}) => {
         setLatitude(getPosition.latitude);
         setLongitude(getPosition.longitude);
       },
-      error => Alert.alert(error.message),
-      {enableHighAccuracy: true, timeout: 60000, maximumAge: 1000},
+      error => {},
+      {enableHighAccuracy: true},
     );
   };
 
@@ -80,6 +83,57 @@ const MapCustomer = ({navigation}) => {
     setTextSearch('');
   };
 
+  const getUserData = () => {
+    getData('user').then(res => {
+      console.log(res);
+      setUid(res.uid);
+      user_id = res.uid;
+    });
+  };
+
+  const onRequest = () => {
+    if (requestValue) {
+      endRide();
+    } else {
+      console.log('onRequest');
+      console.log('uid: ' + uid);
+      setRequestValue(true);
+      setTextButton('Mencari pengemudi...');
+      const location = {
+        latitude: latitude,
+        longitude: longitude,
+      };
+      const ref = Fire.database().ref('customerRequest/');
+      const geofire = new GeoFire(ref);
+      geofire.set(uid, [location.latitude, location.longitude]);
+
+      getClosestDriver();
+    }
+  };
+
+  const getClosestDriver = () => {
+    Fire.database()
+      .ref('driversAvailable/')
+      .once('value')
+      .then(res => {
+        if (res.val()) {
+          const data = res.val();
+          setListDrive(Object.values(data));
+        }
+      })
+      .catch(err => {
+        showError(err.message);
+      });
+  };
+
+  const endRide = () => {
+    setRequestValue(false);
+    setTextButton('Panggil Bentor');
+    Fire.database()
+      .ref('customerRequest/' + user_id + '/')
+      .remove();
+  };
+
   return (
     <View style={styles.page}>
       <MapView
@@ -87,7 +141,7 @@ const MapCustomer = ({navigation}) => {
         provider={PROVIDER_GOOGLE}
         showsUserLocation={true}
         region={region}>
-        {latitude && (
+        {/* {latitude && (
           <Marker
             coordinate={{
               latitude: latitude,
@@ -96,7 +150,20 @@ const MapCustomer = ({navigation}) => {
             title="Lokasi"
             description="Lokasi"
           />
-        )}
+        )} */}
+        {console.log('driver: ' + listDriver.l)}
+        {listDriver.map(marker => {
+          <Marker
+            key={marker.g}
+            coordinate={{
+              latitude: marker.l[0],
+              longitude: marker.l[1],
+            }}>
+            <Callout>
+              <Text>{marker.g}</Text>
+            </Callout>
+          </Marker>;
+        })}
       </MapView>
       <GooglePlacesAutocomplete
         style={styles.places}
@@ -146,7 +213,7 @@ const MapCustomer = ({navigation}) => {
         </View>
       )}
       <View style={styles.button}>
-        <Button title="Panggil Bentor" />
+        <Button title={textButton} onPress={onRequest} />
       </View>
     </View>
   );

@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {StyleSheet, View, Platform, Alert} from 'react-native';
+import {StyleSheet, View, Platform} from 'react-native';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
@@ -45,8 +45,8 @@ const HomeCustomer = ({navigation}) => {
 
         setRegion(getPosition);
       },
-      error => Alert.alert(error.message),
-      {enableHighAccuracy: true, timeout: 60000, maximumAge: 1000},
+      error => {},
+      {enableHighAccuracy: true},
     );
   };
 
@@ -79,9 +79,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.white,
     justifyContent: 'space-between',
-  },
-  contentWrapper: {
-    flex: 1,
   },
   map: {
     width: '100%',

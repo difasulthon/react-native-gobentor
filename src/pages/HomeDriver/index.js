@@ -1,21 +1,13 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {StyleSheet, View, Platform, Alert} from 'react-native';
+import {StyleSheet, View, Platform} from 'react-native';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
-import {Button, User} from '../../components';
+import {Button} from '../../components';
 import {colors} from '../../utils';
-import {DummyUser} from '../../assets';
 
 const HomeDriver = ({navigation}) => {
   const [initialPosition, setInitialPosition] = useState();
-  const [photo] = useState(DummyUser);
-  // const [user] = useState({
-  //   photo: DummyUser,
-  //   nama: 'User satu',
-  //   role: '081234567890',
-  // });
-  const [user] = useState(null);
 
   useEffect(() => {
     requestLocationPermission();
@@ -53,8 +45,8 @@ const HomeDriver = ({navigation}) => {
 
         setInitialPosition(getPosition);
       },
-      error => Alert.alert(error.message),
-      {enableHighAccuracy: true, timeout: 60000, maximumAge: 1000},
+      error => {},
+      {enableHighAccuracy: true},
     );
   };
 
@@ -67,11 +59,6 @@ const HomeDriver = ({navigation}) => {
           showsUserLocation={true}
           region={initialPosition}
         />
-        {user !== null && (
-          <View style={styles.customerWrapper}>
-            <User photo={photo} nama="User satu" role="081234567890" />
-          </View>
-        )}
 
         <View style={styles.button}>
           <Button

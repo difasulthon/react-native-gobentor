@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect} from 'react';
 import {StyleSheet, Text, View, ScrollView} from 'react-native';
 import {ILRickshawLogin} from '../../assets';
 import {Input, Button, Gap} from '../../components';
@@ -10,7 +10,6 @@ const LoginDriver = ({navigation}) => {
     email: '',
     password: '',
   });
-  const [userId, setUserId] = useState();
 
   useEffect(() => {
     Fire.auth().onAuthStateChanged(user => {
@@ -27,7 +26,6 @@ const LoginDriver = ({navigation}) => {
       .createUserWithEmailAndPassword(form.email, form.password)
       .then(success => {
         setForm('reset');
-        setUserId(success.user.uid);
         const data = {
           email: form.email,
           uid: success.user.uid,
@@ -38,7 +36,6 @@ const LoginDriver = ({navigation}) => {
           .ref('Users/Drivers/' + success.user.uid + '/')
           .set(true);
         storeData('user', data);
-        console.log('user id: ' + userId);
       })
       .catch(error => {
         const errorMessage = error.message;

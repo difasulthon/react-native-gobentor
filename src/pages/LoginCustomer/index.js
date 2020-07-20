@@ -49,6 +49,12 @@ const LoginCustomer = ({navigation}) => {
       .signInWithEmailAndPassword(form.email, form.password)
       .then(res => {
         setForm('reset');
+        const data = {
+          email: form.email,
+          uid: res.user.uid,
+          role: 'customer',
+        };
+        storeData('user', data);
       })
       .catch(error => {
         showError(error.message);

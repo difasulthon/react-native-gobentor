@@ -7,6 +7,7 @@ import {Button, User} from '../../components';
 import {colors, getData} from '../../utils';
 import {DummyUser} from '../../assets';
 import {Fire} from '../../config';
+import {GeoFire} from 'geofire';
 
 let uid;
 
@@ -28,7 +29,7 @@ const MapDriver = ({navigation}) => {
     const fetchLocation = setInterval(() => {
       requestLocationPermission();
       setDriverAvailable();
-    }, 2000);
+    }, 1000);
 
     return () => {
       clearInterval(fetchLocation);
@@ -76,14 +77,13 @@ const MapDriver = ({navigation}) => {
   };
 
   const setDriverAvailable = useCallback(() => {
-    console.log('uid: ' + uid);
     const location = {
       latitude: latitude,
       longitude: longitude,
     };
-    Fire.database()
-      .ref('driversAvailable/' + uid + '/')
-      .set(location);
+    const refAvailable = Fire.database().ref('driversAvailable/');
+    const geofireAvailable = new GeoFire(refAvailable);
+    geofireAvailable.set(uid, [location.latitude, location.longitude]);
   }, [latitude, longitude]);
 
   const disconnectDriver = () => {
@@ -94,8 +94,6 @@ const MapDriver = ({navigation}) => {
 
   const getUserData = () => {
     getData('user').then(res => {
-      console.log(res);
-      console.log(res.uid);
       uid = res.uid;
     });
   };
