@@ -14,14 +14,13 @@ const Started = ({navigation}) => {
       <Gap height={60} />
       <View style={styles.contentWrapper}>
         <View style={styles.viewWrapper}>
-          <TouchableOpacity onPress={() => navigation.navigate('LoginDriver')}>
+          <TouchableOpacity onPress={() => navigation.replace('LoginDriver')}>
             <ILDriver />
             <Text style={styles.contentText}>PENGEMUDI</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.viewWrapper}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('LoginCustomer')}>
+          <TouchableOpacity onPress={() => navigation.replace('LoginCustomer')}>
             <ILCustomer />
             <Text style={styles.contentText}>PENUMPANG</Text>
           </TouchableOpacity>

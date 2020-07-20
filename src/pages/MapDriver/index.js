@@ -1,13 +1,16 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {StyleSheet, View, Platform, Alert} from 'react-native';
+import {StyleSheet, View, Platform} from 'react-native';
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
 import {Button, User} from '../../components';
-import {colors} from '../../utils';
+import {colors, getData} from '../../utils';
 import {DummyUser} from '../../assets';
+import {Fire} from '../../config';
 
-const MapDriver = () => {
+let uid;
+
+const MapDriver = ({navigation}) => {
   const [region, setRegion] = useState();
   const [photo] = useState(DummyUser);
   const [latitude, setLatitude] = useState(-6.2389932);
@@ -20,8 +23,18 @@ const MapDriver = () => {
   const [user] = useState(null);
 
   useEffect(() => {
-    requestLocationPermission();
-  }, [requestLocationPermission]);
+    getUserData();
+
+    const fetchLocation = setInterval(() => {
+      requestLocationPermission();
+      setDriverAvailable();
+    }, 2000);
+
+    return () => {
+      clearInterval(fetchLocation);
+      disconnectDriver();
+    };
+  }, [requestLocationPermission, setDriverAvailable, navigation]);
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
@@ -57,9 +70,34 @@ const MapDriver = () => {
         setLatitude(getPosition.latitude);
         setLongitude(getPosition.longitude);
       },
-      error => Alert.alert(error.message),
-      {enableHighAccuracy: true, timeout: 60000, maximumAge: 1000},
+      error => {},
+      {enableHighAccuracy: true},
     );
+  };
+
+  const setDriverAvailable = useCallback(() => {
+    console.log('uid: ' + uid);
+    const location = {
+      latitude: latitude,
+      longitude: longitude,
+    };
+    Fire.database()
+      .ref('driversAvailable/' + uid + '/')
+      .set(location);
+  }, [latitude, longitude]);
+
+  const disconnectDriver = () => {
+    Fire.database()
+      .ref('driversAvailable/' + uid + '/')
+      .remove();
+  };
+
+  const getUserData = () => {
+    getData('user').then(res => {
+      console.log(res);
+      console.log(res.uid);
+      uid = res.uid;
+    });
   };
 
   return (

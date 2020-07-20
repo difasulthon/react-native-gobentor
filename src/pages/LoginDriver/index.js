@@ -15,7 +15,7 @@ const LoginDriver = ({navigation}) => {
   useEffect(() => {
     Fire.auth().onAuthStateChanged(user => {
       if (user) {
-        navigation.replace('MainAppCustomer');
+        navigation.replace('MainAppDriver');
       } else {
         return;
       }
@@ -30,14 +30,15 @@ const LoginDriver = ({navigation}) => {
         setUserId(success.user.uid);
         const data = {
           email: form.email,
-          uid: userId,
+          uid: success.user.uid,
           role: 'driver',
         };
+        console.log('user id: ' + success.user.uid);
         Fire.database()
-          .ref('Users/Drivers/' + userId + '/')
+          .ref('Users/Drivers/' + success.user.uid + '/')
           .set(true);
-        storeData(data);
-        navigation.replace('MainAppDriver');
+        storeData('user', data);
+        console.log('user id: ' + userId);
       })
       .catch(error => {
         const errorMessage = error.message;
@@ -50,7 +51,12 @@ const LoginDriver = ({navigation}) => {
       .signInWithEmailAndPassword(form.email, form.password)
       .then(res => {
         setForm('reset');
-        navigation.replace('MainAppDriver');
+        const data = {
+          email: form.email,
+          uid: res.user.uid,
+          role: 'driver',
+        };
+        storeData('user', data);
       })
       .catch(error => {
         showError(error.message);

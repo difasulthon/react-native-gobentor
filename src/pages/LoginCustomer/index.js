@@ -37,7 +37,6 @@ const LoginCustomer = ({navigation}) => {
           .ref('Users/Customers/' + userId + '/')
           .set(true);
         storeData(data);
-        navigation.replace('MainAppCustomer');
       })
       .catch(error => {
         const errorMessage = error.message;
@@ -50,7 +49,6 @@ const LoginCustomer = ({navigation}) => {
       .signInWithEmailAndPassword(form.email, form.password)
       .then(res => {
         setForm('reset');
-        navigation.replace('MainAppCustomer');
       })
       .catch(error => {
         showError(error.message);
