@@ -4,13 +4,13 @@ import MapView, {PROVIDER_GOOGLE, Marker, Callout} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
-import {GeoFire} from 'geofire';
 import {Button, User} from '../../components';
 import {colors, showError, getData} from '../../utils';
 import {DummyUser, IconErase} from '../../assets';
 import {Fire} from '../../config';
 
 let user_id;
+let requestValue = false;
 
 const MapCustomer = ({navigation}) => {
   const [region, setRegion] = useState();
@@ -25,9 +25,14 @@ const MapCustomer = ({navigation}) => {
   // });
   const [user] = useState(null);
   const [textButton, setTextButton] = useState('Panggil Bentor');
-  const [requestValue, setRequestValue] = useState(false);
+  // const [requestValue, setRequestValue] = useState(false);
+  const [driverFound, setDriverFound] = useState(false);
+  const [driverFoundID, setDriverFoundID] = useState();
   const [listDriver, setListDrive] = useState([]);
   const [uid, setUid] = useState();
+  const [destName, setDestName] = useState();
+  const [destLat, setDestLat] = useState();
+  const [destLong, setDestLong] = useState();
 
   useEffect(() => {
     getUserData();
@@ -73,10 +78,13 @@ const MapCustomer = ({navigation}) => {
     );
   };
 
-  const onRegionChange = (regionData, latitudeData, longitudeData) => {
+  const onPressPlace = (regionData, latitudeData, longitudeData, nameData) => {
     setRegion(regionData);
     setLatitude(latitudeData);
     setLongitude(longitudeData);
+    setDestName(nameData);
+    setDestLat(latitudeData);
+    setDestLong(longitudeData);
   };
 
   const onClearText = () => {
@@ -85,7 +93,6 @@ const MapCustomer = ({navigation}) => {
 
   const getUserData = () => {
     getData('user').then(res => {
-      console.log(res);
       setUid(res.uid);
       user_id = res.uid;
     });
@@ -95,43 +102,92 @@ const MapCustomer = ({navigation}) => {
     if (requestValue) {
       endRide();
     } else {
-      console.log('onRequest');
-      console.log('uid: ' + uid);
-      setRequestValue(true);
+      requestValue = true;
       setTextButton('Mencari pengemudi...');
       const location = {
+        id: uid,
         latitude: latitude,
         longitude: longitude,
       };
-      const ref = Fire.database().ref('customerRequest/');
-      const geofire = new GeoFire(ref);
-      geofire.set(uid, [location.latitude, location.longitude]);
+      const ref = Fire.database().ref('customerRequest/' + uid + '/');
+      ref.set(location);
 
       getClosestDriver();
     }
   };
 
   const getClosestDriver = () => {
-    Fire.database()
-      .ref('driversAvailable/')
-      .once('value')
-      .then(res => {
-        if (res.val()) {
-          const data = res.val();
-          setListDrive(Object.values(data));
-        }
-      })
-      .catch(err => {
-        showError(err.message);
-      });
+    if (requestValue) {
+      if (driverFound !== true) {
+        setDriverFound(true);
+        const driverData = Fire.database().ref('driversAvailable/');
+        driverData
+          .once('value')
+          .then(res => {
+            if (res.val()) {
+              const data = Object.values(res.val());
+              setListDrive(data);
+            }
+          })
+          .catch(err => {
+            showError(err.message);
+          });
+        setTextButton('Mencari lokasi pengemudi...');
+      }
+    }
+    // const driverLocation = Fire.database().ref('driversAvailable/');
+    // const geofire = new GeoFire(driverLocation);
+    // geoquery = geofire.query({
+    //   center: [latitude, longitude],
+    //   radius: radius,
+    // });
+    // geoquery.on('key_entered', function(key, location, distance) {
+    //   console.log('key: ' + key);
+    //   console.log('location: ' + location);
+    //   if (!driverFound && requestValue) {
+    //     setDriverFound(true);
+    //     setDriverFoundID(key);
+    //     let dest = destName;
+    //     let destl = {
+    //       latitude: destLat,
+    //       longitude: destLong,
+    //     };
+    //     const driverRef = Fire.database().ref(
+    //       'Users/Drivers/' + driverFoundID + '/customerRequest/',
+    //     );
+    //     let map = {
+    //       customerRideId: uid,
+    //       destination: dest,
+    //       destinationLat: destl.latitude,
+    //       destinationLng: destl.longitude,
+    //     };
+    //     driverRef.update(map);
+    //     setTextButton('Mencari pengemudi...');
+    //   }
+    // });
+    // geoquery.on('ready', function() {
+    //   if (!driverFound) {
+    //     setRadius(radius + 1);
+    //     getClosestDriver();
+    //   }
+    // });
   };
 
   const endRide = () => {
-    setRequestValue(false);
-    setTextButton('Panggil Bentor');
+    requestValue = false;
     Fire.database()
       .ref('customerRequest/' + user_id + '/')
       .remove();
+    if (driverFoundID != null) {
+      const driverRef = Fire.database().ref(
+        'Users/Drivers/' + driverFoundID + '/customerRequest/',
+      );
+      driverRef.remove();
+      setDriverFoundID(null);
+    }
+    setDriverFound(false);
+    setListDrive([]);
+    setTextButton('Panggil Bentor');
   };
 
   return (
@@ -151,18 +207,22 @@ const MapCustomer = ({navigation}) => {
             description="Lokasi"
           />
         )} */}
-        {console.log('driver: ' + listDriver.l)}
+        {/* {console.log('driver: ' + listDriver)} */}
         {listDriver.map(marker => {
-          <Marker
-            key={marker.g}
-            coordinate={{
-              latitude: marker.l[0],
-              longitude: marker.l[1],
-            }}>
-            <Callout>
-              <Text>{marker.g}</Text>
-            </Callout>
-          </Marker>;
+          return (
+            <Marker
+              key={marker.id}
+              coordinate={{
+                latitude: marker.latitude,
+                longitude: marker.longitude,
+              }}
+              title={marker.id}
+              description={marker.id}>
+              <Callout>
+                <Text>{marker.g}</Text>
+              </Callout>
+            </Marker>
+          );
         })}
       </MapView>
       <GooglePlacesAutocomplete
@@ -188,10 +248,11 @@ const MapCustomer = ({navigation}) => {
             latitudeDelta: 0.09,
             longitudeDelta: 0.035,
           };
-          onRegionChange(
+          onPressPlace(
             regionPlace,
             regionPlace.latitude,
             regionPlace.longitude,
+            details.name,
           );
         }}
         textInputProps={{

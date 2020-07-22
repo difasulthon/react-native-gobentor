@@ -78,12 +78,12 @@ const MapDriver = ({navigation}) => {
 
   const setDriverAvailable = useCallback(() => {
     const location = {
+      id: uid,
       latitude: latitude,
       longitude: longitude,
     };
-    const refAvailable = Fire.database().ref('driversAvailable/');
-    const geofireAvailable = new GeoFire(refAvailable);
-    geofireAvailable.set(uid, [location.latitude, location.longitude]);
+    const refAvailable = Fire.database().ref('driversAvailable/' + uid + '/');
+    refAvailable.set(location);
   }, [latitude, longitude]);
 
   const disconnectDriver = () => {
