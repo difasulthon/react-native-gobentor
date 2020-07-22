@@ -7,7 +7,6 @@ import {Button, User} from '../../components';
 import {colors, getData} from '../../utils';
 import {DummyUser} from '../../assets';
 import {Fire} from '../../config';
-import {GeoFire} from 'geofire';
 
 let uid;
 
