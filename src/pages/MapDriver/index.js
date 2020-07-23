@@ -13,8 +13,8 @@ let uid;
 const MapDriver = ({navigation}) => {
   const [region, setRegion] = useState();
   const [photo] = useState(DummyUser);
-  const [latitude, setLatitude] = useState(-6.2389932);
-  const [longitude, setLongitude] = useState(107.0494232);
+  const [latitude, setLatitude] = useState(1);
+  const [longitude, setLongitude] = useState(1);
   // const [user] = useState({
   //   photo: DummyUser,
   //   nama: 'User satu',
@@ -27,14 +27,13 @@ const MapDriver = ({navigation}) => {
 
     const fetchLocation = setInterval(() => {
       requestLocationPermission();
-      setDriverAvailable();
     }, 1000);
 
     return () => {
       clearInterval(fetchLocation);
       disconnectDriver();
     };
-  }, [requestLocationPermission, setDriverAvailable, navigation]);
+  }, [requestLocationPermission, navigation]);
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
@@ -52,9 +51,9 @@ const MapDriver = ({navigation}) => {
         locateCurrentLocation();
       }
     }
-  }, []);
+  }, [locateCurrentLocation]);
 
-  const locateCurrentLocation = () => {
+  const locateCurrentLocation = useCallback(() => {
     Geolocation.getCurrentPosition(
       position => {
         // console.log(JSON.stringify(position));
@@ -69,21 +68,23 @@ const MapDriver = ({navigation}) => {
         setRegion(getPosition);
         setLatitude(getPosition.latitude);
         setLongitude(getPosition.longitude);
+
+        setDriverAvailable(getPosition.latitude, getPosition.longitude);
       },
       error => {},
       {enableHighAccuracy: true},
     );
-  };
+  }, []);
 
-  const setDriverAvailable = useCallback(() => {
+  const setDriverAvailable = (latitudeData, longitudeData) => {
     const location = {
       id: uid,
-      latitude: latitude,
-      longitude: longitude,
+      latitude: latitudeData,
+      longitude: longitudeData,
     };
     const refAvailable = Fire.database().ref('driversAvailable/' + uid + '/');
     refAvailable.set(location);
-  }, [latitude, longitude]);
+  };
 
   const disconnectDriver = () => {
     Fire.database()
