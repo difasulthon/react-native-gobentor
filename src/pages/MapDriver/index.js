@@ -1,8 +1,9 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {StyleSheet, View, Platform, Text} from 'react-native';
-import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
+import MapView, {PROVIDER_GOOGLE, Marker, Polyline} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
+import {decode} from '@mapbox/polyline';
 import {Button, User} from '../../components';
 import {colors, getData, showError, fonts} from '../../utils';
 import {DummyUser} from '../../assets';
@@ -17,6 +18,26 @@ let destName = 'destination';
 let destLat = 1;
 let destLng = 1;
 
+const getDirections = async (startLoc, destinationLoc) => {
+  try {
+    const KEY = '';
+    let resp = await fetch(
+      `https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc}&destination=${destinationLoc}&key=${KEY}`,
+    );
+    let respJson = await resp.json();
+    let points = decode(respJson.routes[0].overview_polyline.points);
+    let coords = points.map((point, index) => {
+      return {
+        latitude: point[0],
+        longitude: point[1],
+      };
+    });
+    return coords;
+  } catch (error) {
+    return error;
+  }
+};
+
 const MapDriver = ({navigation}) => {
   const [region, setRegion] = useState();
   const [photo] = useState(DummyUser);
@@ -24,6 +45,7 @@ const MapDriver = ({navigation}) => {
   const [longitude, setLongitude] = useState(1);
   const [user, setUser] = useState(null);
   const [textButton, setTextButton] = useState('Ambil Penumpang');
+  const [coords, setCoords] = useState([]);
 
   useEffect(() => {
     getUserData();
@@ -103,10 +125,19 @@ const MapDriver = ({navigation}) => {
     switch (status) {
       case 1:
         status = 2;
+        if (destLat !== 1 && destLng !== 1) {
+          getDirections(`${latitude},${longitude}`, `${destLat},${destLng}`)
+            .then(coordsValue => {
+              setCoords(coordsValue);
+            })
+            .catch(err => {
+              showError(err);
+            });
+        }
         setTextButton('Perjalanan Selesai');
         break;
       case 2:
-        endRide();
+        // endRide();
         break;
     }
   };
@@ -236,6 +267,9 @@ const MapDriver = ({navigation}) => {
             title="Destination"
             description={destName}
           />
+        )}
+        {coords.length > 0 && (
+          <Polyline coordinates={coords} strokeWidth={4} strokeColor={'red'} />
         )}
       </MapView>
       {user !== null && (
