@@ -1,26 +1,29 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {StyleSheet, View, Platform} from 'react-native';
+import {StyleSheet, View, Platform, Text} from 'react-native';
 import MapView, {PROVIDER_GOOGLE, Marker} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
 import {Button, User} from '../../components';
-import {colors, getData} from '../../utils';
+import {colors, getData, showError, fonts} from '../../utils';
 import {DummyUser} from '../../assets';
 import {Fire} from '../../config';
 
 let uid;
+let status = 0;
+let customerId;
+let pickupLat = 1;
+let pickupLng = 1;
+let destName = 'destination';
+let destLat = 1;
+let destLng = 1;
 
 const MapDriver = ({navigation}) => {
   const [region, setRegion] = useState();
   const [photo] = useState(DummyUser);
   const [latitude, setLatitude] = useState(1);
   const [longitude, setLongitude] = useState(1);
-  // const [user] = useState({
-  //   photo: DummyUser,
-  //   nama: 'User satu',
-  //   role: '081234567890',
-  // });
-  const [user] = useState(null);
+  const [user, setUser] = useState(null);
+  const [textButton, setTextButton] = useState('Ambil Penumpang');
 
   useEffect(() => {
     getUserData();
@@ -29,23 +32,23 @@ const MapDriver = ({navigation}) => {
       requestLocationPermission();
     }, 1000);
 
+    getAssignedCustomer();
+
     return () => {
       clearInterval(fetchLocation);
-      disconnectDriver();
+      // disconnectDriver();
     };
-  }, [requestLocationPermission, navigation]);
+  }, [requestLocationPermission, navigation, getAssignedCustomer]);
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
       let response = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-      // console.log('iPhone: ' + response);
 
       if (response === 'granted') {
         locateCurrentLocation();
       }
     } else {
       let response = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-      // console.log('Android: ' + response);
 
       if (response === 'granted') {
         locateCurrentLocation();
@@ -56,8 +59,6 @@ const MapDriver = ({navigation}) => {
   const locateCurrentLocation = useCallback(() => {
     Geolocation.getCurrentPosition(
       position => {
-        // console.log(JSON.stringify(position));
-
         let getPosition = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -98,6 +99,107 @@ const MapDriver = ({navigation}) => {
     });
   };
 
+  const onRide = () => {
+    switch (status) {
+      case 1:
+        status = 2;
+        setTextButton('Perjalanan Selesai');
+        break;
+      case 2:
+        endRide();
+        break;
+    }
+  };
+
+  const getAssignedCustomer = useCallback(() => {
+    const assignedCustomerRef = Fire.database().ref(
+      'Users/Drivers/' + uid + '/customerRequest/customerRideId/',
+    );
+    assignedCustomerRef
+      .once('value')
+      .then(res => {
+        if (res.val()) {
+          customerId = res.val();
+          status = 1;
+          getAssignedCustomerPickupLocation(customerId);
+          getAssignedCustomerDestination();
+          getAssignedCustomerInfo();
+        }
+      })
+      .catch(err => {
+        showError(err.message);
+      });
+  }, []);
+
+  const getAssignedCustomerPickupLocation = customerIdData => {
+    const customerRef = Fire.database().ref(
+      'customerRequest/' + customerIdData + '/',
+    );
+    customerRef
+      .once('value')
+      .then(res => {
+        if (res.val()) {
+          const data = res.val();
+          pickupLat = data.latitude;
+          pickupLng = data.longitude;
+        }
+      })
+      .catch(err => {
+        showError(err.message);
+      });
+  };
+
+  const getAssignedCustomerDestination = () => {
+    const customerRef = Fire.database().ref(
+      'Users/Drivers/' + uid + '/customerRequest/',
+    );
+    customerRef
+      .once('value')
+      .then(res => {
+        if (res.val()) {
+          const data = res.val();
+          destName = data.destination;
+          destLat = data.destinationLat;
+          destLng = data.destinationLng;
+        }
+      })
+      .catch(err => {
+        showError(err.message);
+      });
+  };
+
+  const getAssignedCustomerInfo = () => {
+    const customerRef = Fire.database().ref('Users/Customers/' + customerId);
+    customerRef
+      .once('value')
+      .then(res => {
+        if (res.val()) {
+          setUser(res.val());
+        }
+      })
+      .catch(err => {
+        showError(err.message);
+      });
+  };
+
+  const endRide = () => {
+    setTextButton('Ambil Penumpang');
+    const driverRef = Fire.database().ref(
+      'Users/Drivers/' + uid + '/customerRequest/',
+    );
+    driverRef.set(false);
+    Fire.database()
+      .ref('customerRequest/' + uid + '/')
+      .remove();
+    status = 0;
+    customerId = '';
+    pickupLat = 1;
+    pickupLng = 1;
+    destName = 'destination';
+    destLat = 1;
+    destLng = 1;
+  };
+
   return (
     <View style={styles.page}>
       <MapView
@@ -115,14 +217,35 @@ const MapDriver = ({navigation}) => {
             description="Lokasi"
           />
         )}
+        {pickupLat && (
+          <Marker
+            coordinate={{
+              latitude: pickupLat,
+              longitude: pickupLng,
+            }}
+            title="Pickup"
+            description="Pickup"
+          />
+        )}
+        {destLat && (
+          <Marker
+            coordinate={{
+              latitude: destLat,
+              longitude: destLng,
+            }}
+            title="Destination"
+            description={destName}
+          />
+        )}
       </MapView>
       {user !== null && (
         <View style={styles.customerWrapper}>
           <User photo={photo} nama="User satu" role="081234567890" />
+          <Text style={styles.textPrice}>Rp 5000</Text>
         </View>
       )}
       <View style={styles.button}>
-        <Button title="Ambil Penumpang" />
+        <Button title={textButton} onPress={onRide} />
       </View>
     </View>
   );
@@ -170,5 +293,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.white,
     borderLeftColor: colors.border,
     borderRightColor: colors.border,
+  },
+  textPrice: {
+    fontFamily: fonts.primary[700],
+    color: colors.text.primary,
+    fontSize: 14,
+    textAlign: 'right',
+    paddingRight: 30,
   },
 });
