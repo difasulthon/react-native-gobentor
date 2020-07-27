@@ -36,7 +36,7 @@ const LoginCustomer = ({navigation}) => {
         Fire.database()
           .ref('Users/Customers/' + userId + '/')
           .set(true);
-        storeData(data);
+        storeData('user', data);
       })
       .catch(error => {
         const errorMessage = error.message;

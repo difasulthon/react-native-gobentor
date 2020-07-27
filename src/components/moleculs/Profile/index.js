@@ -10,9 +10,9 @@ const Profile = ({name, desc, detail, photo, onPress}) => {
           <Image source={photo} style={styles.avatarDetail} />
         </TouchableOpacity>
       ) : (
-        <View style={styles.borderProfile}>
+        <TouchableOpacity style={styles.borderProfile} onPress={onPress}>
           <Image source={photo} style={styles.avatar} />
-        </View>
+        </TouchableOpacity>
       )}
       {name && (
         <View>

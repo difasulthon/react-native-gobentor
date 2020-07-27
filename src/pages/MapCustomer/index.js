@@ -157,7 +157,7 @@ const MapCustomer = ({navigation}) => {
       destinationLat: destLat,
       destinationLng: destLong,
     };
-    driverRef.set(data);
+    driverRef.update(data);
   };
 
   const getDriverLocation = distanceData => {
@@ -195,7 +195,7 @@ const MapCustomer = ({navigation}) => {
       const driverRef = Fire.database().ref(
         'Users/Drivers/' + driverFoundID + '/customerRequest/',
       );
-      driverRef.set(false);
+      driverRef.remove();
       driverFoundID = null;
     }
     setDriverFound(false);

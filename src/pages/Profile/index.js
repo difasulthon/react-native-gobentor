@@ -1,14 +1,54 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {Button, List, Gap, User} from '../../components';
 import {DummyUser} from '../../assets';
-import {colors, showError} from '../../utils';
+import {colors, showError, getData} from '../../utils';
 import {Fire} from '../../config';
 
 const Profile = ({navigation}) => {
-  const [photo] = useState(DummyUser);
-  const [fullName] = useState('User Satu');
-  const [role] = useState('Driver');
+  const [photo, setPhoto] = useState(DummyUser);
+  const [fullName, setFullName] = useState('User Satu');
+  const [role, setRole] = useState('Driver');
+  const [profile, setProfile] = useState({
+    uid: '',
+    email: '',
+    role: '',
+    fullName: '',
+    telp: '',
+  });
+
+  useEffect(() => {
+    getData('user').then(res => {
+      const data = res;
+      setProfile(data);
+      setRole(data.role);
+    });
+    getDataFromDB();
+  }, [getDataFromDB]);
+
+  const getDataFromDB = useCallback(() => {
+    const data = profile;
+    let useRole;
+    if (data.role === 'driver') {
+      useRole = 'Drivers';
+    }
+    if (data.role === 'customer') {
+      useRole = 'Customers';
+    }
+    Fire.database()
+      .ref('Users/' + useRole + '/' + profile.uid + '/')
+      .once('value')
+      .then(res => {
+        if (res.val()) {
+          const userData = res.val();
+          setFullName(userData.name);
+          setPhoto({uri: userData.profileImageUrl});
+        }
+      })
+      .catch(err => {
+        showError(err.message);
+      });
+  }, [profile]);
 
   const onLogout = () => {
     Fire.auth()
@@ -45,7 +85,7 @@ const Profile = ({navigation}) => {
         <List
           type="next"
           name="Keamanan"
-          icon="privacy"
+          icon="secure"
           account
           onPress={() => navigation.navigate('Secure')}
         />
