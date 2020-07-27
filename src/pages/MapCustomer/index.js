@@ -5,6 +5,7 @@ import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
 import {getPreciseDistance} from 'geolib';
+import numeral from 'numeral';
 import {Button, User} from '../../components';
 import {colors, showError, getData, fonts} from '../../utils';
 import {DummyUser, IconErase} from '../../assets';
@@ -18,21 +19,27 @@ let driverLng = 1;
 
 const MapCustomer = ({navigation}) => {
   const [region, setRegion] = useState();
-  const [photo] = useState(DummyUser);
+  const [photo, setPhoto] = useState(DummyUser);
   const [latitude, setLatitude] = useState(-6.2389932);
   const [longitude, setLongitude] = useState(107.0494232);
   const [textSearch, setTextSearch] = useState('');
-  const [user, setUser] = useState(null);
+  const [name, setName] = useState(null);
+  const [phone, setPhone] = useState(null);
   const [textButton, setTextButton] = useState('Panggil Bentor');
   const [driverFound, setDriverFound] = useState(false);
   const [uid, setUid] = useState();
   const [destName, setDestName] = useState();
   const [destLat, setDestLat] = useState(1);
   const [destLong, setDestLong] = useState(1);
+  const [ridePrice, setRidePrice] = useState(null);
 
   useEffect(() => {
     getUserData();
     requestLocationPermission();
+
+    return () => {
+      endRide();
+    };
   }, [requestLocationPermission]);
 
   const requestLocationPermission = useCallback(async () => {
@@ -75,6 +82,22 @@ const MapCustomer = ({navigation}) => {
     setDestName(nameData);
     setDestLat(latitudeData);
     setDestLong(longitudeData);
+    const distance = getPreciseDistance(
+      {latitude: latitude, longitude: longitude},
+      {latitude: latitudeData, longitude: longitudeData},
+    );
+    const distanceInKm = distance / 1000;
+    let price;
+    if (distanceInKm < 1) {
+      price = 5000;
+      setRidePrice(price);
+      price = 0;
+    }
+    if (distanceInKm > 1) {
+      price = (distanceInKm - 1) * 1850 + 5000;
+      setRidePrice(price);
+      price = 0;
+    }
   };
 
   const onClearText = () => {
@@ -122,13 +145,13 @@ const MapCustomer = ({navigation}) => {
                 driverFoundID = value.id;
                 setDataDriver(value.id, value.latitude, value.longitude);
                 setDriverLocation(value.latitude, value.longitude);
+                getDriverInfo(driverFoundID);
               });
             }
           })
           .catch(err => {
             showError(err.message);
           });
-        getDriverInfo();
         setTextButton('Mencari lokasi pengemudi...');
       }
     }
@@ -170,20 +193,33 @@ const MapCustomer = ({navigation}) => {
     }
   };
 
-  const getDriverInfo = () => {
-    const driverRef = Fire.database().ref(
-      'Users/Drivers/' + driverFoundID + '/',
-    );
+  const getDriverInfo = idData => {
+    const driverRef = Fire.database().ref('Users/Drivers/' + idData + '/');
     driverRef
       .once('value')
       .then(res => {
         if (res.val()) {
-          setUser(res.val());
+          const data = res.val();
+          if (data.name) {
+            setName(data.name);
+          }
+          if (data.phone) {
+            setPhone(data.phone);
+          }
+          if (data.profileImageUrl) {
+            setPhoto({uri: data.profileImageUrl});
+          }
         }
       })
       .catch(err => {
         showError(err.message);
       });
+  };
+
+  const RupiahFormat = Price => {
+    return numeral(Price)
+      .format('0,0')
+      .replace(/,/g, '.');
   };
 
   const endRide = () => {
@@ -199,12 +235,16 @@ const MapCustomer = ({navigation}) => {
       driverFoundID = null;
     }
     setDriverFound(false);
-    setUser(null);
     setDestName();
     setDestLat(1);
     setDestLong(1);
     driverLat = 1;
     driverLng = 1;
+    setName(null);
+    setPhoto(null);
+    setPhone(null);
+    setRidePrice(null);
+    setPhoto(DummyUser);
     setTextButton('Panggil Bentor');
   };
 
@@ -289,10 +329,10 @@ const MapCustomer = ({navigation}) => {
         )}
       />
 
-      {user !== null && (
+      {name !== null && (
         <View style={styles.customerWrapper}>
-          <User photo={photo} nama="User satu" role="081234567890" />
-          <Text style={styles.textPrice}>Rp 5000</Text>
+          <User photo={photo} nama={name} role={phone} />
+          <Text style={styles.textPrice}>Rp {RupiahFormat(ridePrice)}</Text>
         </View>
       )}
       <View style={styles.button}>

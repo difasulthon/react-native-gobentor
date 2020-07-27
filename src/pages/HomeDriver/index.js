@@ -16,14 +16,12 @@ const HomeDriver = ({navigation}) => {
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'ios') {
       let response = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-      // console.log('iPhone: ' + response);
 
       if (response === 'granted') {
         locateCurrentLocation();
       }
     } else {
       let response = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-      // console.log('Android: ' + response);
 
       if (response === 'granted') {
         locateCurrentLocation();
@@ -34,8 +32,6 @@ const HomeDriver = ({navigation}) => {
   const locateCurrentLocation = () => {
     Geolocation.getCurrentPosition(
       position => {
-        // console.log(JSON.stringify(position));
-
         let getPosition = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,

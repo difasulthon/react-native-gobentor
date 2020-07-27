@@ -31,7 +31,6 @@ const LoginDriver = ({navigation}) => {
           uid: success.user.uid,
           role: 'driver',
         };
-        console.log('user id: ' + success.user.uid);
         Fire.database()
           .ref('Users/Drivers/' + success.user.uid + '/')
           .set(true);

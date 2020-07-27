@@ -20,6 +20,7 @@
     "firebase": "^7.16.0",
     "geofire": "^5.0.1",
     "geolib": "^3.3.1",
+    "numeral": "^2.0.6",
     "react": "16.11.0",
     "react-native": "0.62.2",
     "react-native-flash-message": "^0.1.15",

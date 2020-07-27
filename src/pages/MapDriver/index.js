@@ -4,6 +4,8 @@ import MapView, {PROVIDER_GOOGLE, Marker, Polyline} from 'react-native-maps';
 import {request, PERMISSIONS} from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
 import {decode} from '@mapbox/polyline';
+import {getPreciseDistance} from 'geolib';
+import numeral from 'numeral';
 import {Button, User} from '../../components';
 import {colors, getData, showError, fonts} from '../../utils';
 import {DummyUser} from '../../assets';
@@ -40,12 +42,14 @@ const getDirections = async (startLoc, destinationLoc) => {
 
 const MapDriver = ({navigation}) => {
   const [region, setRegion] = useState();
-  const [photo] = useState(DummyUser);
+  const [photo, setPhoto] = useState(DummyUser);
   const [latitude, setLatitude] = useState(1);
   const [longitude, setLongitude] = useState(1);
-  const [user, setUser] = useState(null);
+  const [name, setName] = useState(null);
+  const [phone, setPhone] = useState(null);
   const [textButton, setTextButton] = useState('Ambil Penumpang');
   const [coords, setCoords] = useState([]);
+  const [ridePrice, setRidePrice] = useState(null);
 
   useEffect(() => {
     getUserData();
@@ -58,7 +62,7 @@ const MapDriver = ({navigation}) => {
 
     return () => {
       clearInterval(fetchLocation);
-      // disconnectDriver();
+      disconnectDriver();
     };
   }, [requestLocationPermission, navigation, getAssignedCustomer]);
 
@@ -137,7 +141,7 @@ const MapDriver = ({navigation}) => {
         setTextButton('Perjalanan Selesai');
         break;
       case 2:
-        // endRide();
+        endRide();
         break;
     }
   };
@@ -160,7 +164,7 @@ const MapDriver = ({navigation}) => {
       .catch(err => {
         showError(err.message);
       });
-  }, []);
+  }, [getAssignedCustomerInfo]);
 
   const getAssignedCustomerPickupLocation = customerIdData => {
     const customerRef = Fire.database().ref(
@@ -199,18 +203,55 @@ const MapDriver = ({navigation}) => {
       });
   };
 
-  const getAssignedCustomerInfo = () => {
-    const customerRef = Fire.database().ref('Users/Customers/' + customerId);
+  const getAssignedCustomerInfo = useCallback(() => {
+    const customerRef = Fire.database().ref(
+      'Users/Customers/' + customerId + '/',
+    );
     customerRef
       .once('value')
       .then(res => {
         if (res.val()) {
-          setUser(res.val());
+          const data = res.val();
+          if (data.name) {
+            setName(data.name);
+          }
+          if (data.phone) {
+            setPhone(data.phone);
+          }
+          if (data.profileImageUrl) {
+            setPhoto({uri: data.profileImageUrl});
+          }
+          setPrice();
         }
       })
       .catch(err => {
         showError(err.message);
       });
+  }, []);
+
+  const setPrice = () => {
+    const distance = getPreciseDistance(
+      {latitude: pickupLat, longitude: pickupLng},
+      {latitude: destLat, longitude: destLng},
+    );
+    const distanceInKm = distance / 1000;
+    let price;
+    if (distanceInKm < 1) {
+      price = 5000;
+      setRidePrice(price);
+      price = 0;
+    }
+    if (distanceInKm > 1) {
+      price = (distanceInKm - 1) * 1850 + 5000;
+      setRidePrice(price);
+      price = 0;
+    }
+  };
+
+  const RupiahFormat = Price => {
+    return numeral(Price)
+      .format('0,0')
+      .replace(/,/g, '.');
   };
 
   const endRide = () => {
@@ -229,6 +270,10 @@ const MapDriver = ({navigation}) => {
     destName = 'destination';
     destLat = 1;
     destLng = 1;
+    setName(null);
+    setPhoto(DummyUser);
+    setPhone(null);
+    setRidePrice(null);
   };
 
   return (
@@ -272,10 +317,10 @@ const MapDriver = ({navigation}) => {
           <Polyline coordinates={coords} strokeWidth={4} strokeColor={'red'} />
         )}
       </MapView>
-      {user !== null && (
+      {name !== null && (
         <View style={styles.customerWrapper}>
-          <User photo={photo} nama="User satu" role="081234567890" />
-          <Text style={styles.textPrice}>Rp 5000</Text>
+          <User photo={photo} nama={name} role={phone} />
+          <Text style={styles.textPrice}>Rp {RupiahFormat(ridePrice)}</Text>
         </View>
       )}
       <View style={styles.button}>
