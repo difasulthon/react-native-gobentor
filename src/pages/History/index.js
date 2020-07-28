@@ -8,20 +8,6 @@ import {Fire} from '../../config';
 let listIdHistory = [];
 
 const History = ({navigation}) => {
-  const [data] = useState([
-    {
-      name: 'satu',
-      desc: '14 Juli 2020',
-    },
-    {
-      name: 'dua',
-      desc: '14 Juli 2020',
-    },
-    {
-      name: 'tiga',
-      desc: '14 Juli 2020',
-    },
-  ]);
   const [userRole, setUserRole] = useState(null);
   const [uid, setUid] = useState(null);
   const [listHistory, setListHistory] = useState([]);
