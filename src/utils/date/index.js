@@ -12,3 +12,31 @@ export const setDateChat = date => {
 
   return `${year}-${month}-${day}`;
 };
+
+const monthNames = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
+export const getCurrentDate = () => {
+  let today = new Date();
+  let d = today.getDate();
+  let m = today.getMonth();
+  let month = monthNames[m];
+  let y = today.getFullYear();
+  var hours = today.getHours(); //Current Hours
+  var min = today.getMinutes(); //Current Minutes
+  var sec = today.getSeconds(); //Current Seconds
+  let date = `${d} ${month} ${y}, ${hours}:${min}:${sec}`;
+  return date;
+};

@@ -7,7 +7,7 @@ import {decode} from '@mapbox/polyline';
 import {getPreciseDistance} from 'geolib';
 import numeral from 'numeral';
 import {Button, User} from '../../components';
-import {colors, getData, showError, fonts} from '../../utils';
+import {colors, getData, showError, fonts, getCurrentDate} from '../../utils';
 import {DummyUser} from '../../assets';
 import {Fire} from '../../config';
 
@@ -49,6 +49,7 @@ const MapDriver = ({navigation}) => {
   const [phone, setPhone] = useState(null);
   const [textButton, setTextButton] = useState('Ambil Penumpang');
   const [coords, setCoords] = useState([]);
+  const [distanceVal, setDistanceVal] = useState(null);
   const [ridePrice, setRidePrice] = useState(null);
 
   useEffect(() => {
@@ -141,6 +142,7 @@ const MapDriver = ({navigation}) => {
         setTextButton('Perjalanan Selesai');
         break;
       case 2:
+        recordRide();
         endRide();
         break;
     }
@@ -235,6 +237,7 @@ const MapDriver = ({navigation}) => {
       {latitude: destLat, longitude: destLng},
     );
     const distanceInKm = distance / 1000;
+    setDistanceVal(distanceInKm);
     let price;
     if (distanceInKm < 1) {
       price = 5000;
@@ -254,14 +257,45 @@ const MapDriver = ({navigation}) => {
       .replace(/,/g, '.');
   };
 
+  const recordRide = () => {
+    const driverRef = Fire.database().ref('Users/Drivers/' + uid + '/history/');
+    const customerRef = Fire.database().ref(
+      'Users/Customers/' + customerId + '/history/',
+    );
+    const historyRef = Fire.database().ref('history/');
+    const requestId = historyRef.push().key;
+    driverRef.child(requestId).set(true);
+    customerRef.child(requestId).set(true);
+
+    const data = {
+      driver: uid,
+      customer: customerId,
+      timestamp: getCurrentDate(),
+      destination: destName,
+      location: {
+        from: {
+          lat: pickupLat,
+          lng: pickupLng,
+        },
+        to: {
+          lat: destLat,
+          lng: destLng,
+        },
+      },
+      distance: distanceVal,
+      price: ridePrice,
+    };
+    historyRef.child(requestId).update(data);
+  };
+
   const endRide = () => {
     setTextButton('Ambil Penumpang');
     const driverRef = Fire.database().ref(
       'Users/Drivers/' + uid + '/customerRequest/',
     );
-    driverRef.set(false);
+    driverRef.remove();
     Fire.database()
-      .ref('customerRequest/' + uid + '/')
+      .ref('customerRequest/' + customerId + '/')
       .remove();
     status = 0;
     customerId = '';
@@ -274,6 +308,8 @@ const MapDriver = ({navigation}) => {
     setPhoto(DummyUser);
     setPhone(null);
     setRidePrice(null);
+    setDistanceVal(null);
+    setCoords([]);
   };
 
   return (
