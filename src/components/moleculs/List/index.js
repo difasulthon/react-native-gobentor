@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   desc: {
-    fontSize: 12,
+    fontSize: 8,
     fontFamily: fonts.primary[300],
     color: colors.text.secondary,
   },
