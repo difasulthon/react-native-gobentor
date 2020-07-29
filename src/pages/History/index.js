@@ -55,7 +55,6 @@ const History = ({navigation}) => {
             timestamp: res.val().timestamp,
           };
           listIdHistory.push(itemHistory);
-          console.log(listIdHistory);
           setHistoryData(listIdHistory);
         }
       })
@@ -87,7 +86,9 @@ const History = ({navigation}) => {
                 name={item.item.timestamp}
                 desc={item.item.rideId}
                 type="next"
-                onPress={() => navigation.navigate('DetailHistory')}
+                onPress={() =>
+                  navigation.navigate('DetailHistory', item.item.rideId)
+                }
               />
             )}
           />

@@ -40,9 +40,9 @@ const EditProfile = ({navigation}) => {
       .then(res => {
         if (res.val()) {
           const userData = res.val();
-          changeText('telp', userData.phone);
-          changeText('fullName', userData.name);
           setPhoto({uri: userData.profileImageUrl});
+          changeText('fullName', userData.name);
+          changeText('telp', userData.phone);
         }
       })
       .catch(err => {
